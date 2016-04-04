@@ -25,5 +25,5 @@
                (:file "oracle-api")
                (:file "oracle-loader")
                (:file "foreign-resources")
-               (:file "dbd-oracle"))
-  :description "Database driver for ORACLE.")
+               (:file "dbd-oracle")))
+

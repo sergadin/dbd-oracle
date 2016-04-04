@@ -394,7 +394,7 @@ the length of that format.")
                               (:conc-name qc-)
                               (:constructor %make-query-cursor))
   (db (error "missing DB")   ; db conn. this table is associated with
-    :type oracle-database
+    :type <oracle-database>
     :read-only t)
   (stmthp (error "missing STMTHP")      ; the statement handle used to create
 ;;  :type alien                 ; this table. owned by the QUERY-CURSOR

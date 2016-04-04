@@ -44,6 +44,8 @@ assigned to this variable should be a list of pathnames. For example,
      (dbi:disconect connection))
 ```
 
+You may need to create a symbolic link `libclntsh.so` to appropriate filename, e.g. `libclntsh.so.12.1`.
+
 ### Running queries
 
 Queries are evaluated using CL-DBI interface. Parameters bindings is
@@ -82,7 +84,7 @@ Automatic substitution of question marks may be disabled by setting
 This code was tested using Oracle 11g server under following client configurations:
 
 * 64-bit Clozure CL 1.9 under Windows 7 using 64-bit version of Oracle instant client 12.1.0.1
-* 64-bit SBCL under Ubuntu 15.04
+* 64-bit SBCL 1.3.2 under Ubuntu 14.04 64-bit using Oracle instant client 12.1.0.1
 
 
 ## License

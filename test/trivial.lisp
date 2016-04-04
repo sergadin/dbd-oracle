@@ -8,7 +8,7 @@
 (defun trivial-test ()
     (let* ((dbd.oracle:*foreign-library-search-paths* '(#p"/opt/oracle/"))
            (connection (dbi:connect :oracle
-                                    :database-name "192.168.56.103:1521/orcl"
+                                    :database-name "127.0.0.1:1521/orcl"
                                     :username "scott"
                                     :password "tiger"
                                     :encoding :utf-8)))
@@ -30,3 +30,4 @@
           (format t "~&~D rows deleted.~%" (dbi:row-count connection)))
         (execute-command "DROP TABLE testdbi")
         (dbi:disconnect connection))))
+
