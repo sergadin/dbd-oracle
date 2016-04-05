@@ -1,6 +1,6 @@
 # dbd-oracle: Oracle database driver for CL-DBI
 
-This driver is based on OCI bindings developed for CLSQL-oracle.
+This driver is based on OCI bindings developed for CLSQL.
 
 ## Usage
 
@@ -20,7 +20,7 @@ number, and oracle SID or service name. For example,
                :encoding :utf-8))
 ```
 
-Encoding parameter is used for conversion character strings between
+Encoding parameter is used for conversion of character strings between
 OCI library and Lisp. :utf-8 is the default encoding. Possible
 values for encoding parameter is the same as for CFFI string
 conversion functions.
@@ -28,10 +28,11 @@ conversion functions.
 
 ### Loading OCI library
 
-By default the OCI library is searched in ORACLE_HOME,
-ORACLE_HOME/lib, and ORACLE_HOME/bin directories, as well as in the
-current directory. If ORACLE_HOME environment variable is not set,
-then search paths can be provided by setting
+The application makes an attempt to load Oracle OCI library during the
+first call to `dbi:connect`. By default, the OCI library is searched in
+ORACLE_HOME, ORACLE_HOME/lib, and ORACLE_HOME/bin directories, as well
+as in the current directory. If ORACLE_HOME environment variable is
+not set, then search paths can be provided by setting
 `dbd.oracle:*foreign-library-search-paths*` variable. The value
 assigned to this variable should be a list of pathnames. For example,
 
@@ -44,17 +45,19 @@ assigned to this variable should be a list of pathnames. For example,
      (dbi:disconect connection))
 ```
 
-You may need to create a symbolic link `libclntsh.so` to appropriate filename, e.g. `libclntsh.so.12.1`.
+You may need to create a symbolic link for `libclntsh.so` pointing to
+an appropriate library, e.g. `libclntsh.so.12.1`.
 
 ### Running queries
 
 Queries are evaluated using CL-DBI interface. Parameters bindings is
 not guaranteed to work properly due to incompatible syntax for
 placeholders definitions used in CL-DBI and Oracle queries. Oracle
-requires parameter name to start with a colon, while CL-DBI uses
+requires parameter name to start with a colon, while CL-DBI uses the
 question mark `?` to define placeholders. Simple substitution of *all*
-occurrences of " ?" (a space followed by question mark) by
-Oracle-friendly expressions is performed for all queries.
+occurrences of " ?" (a space followed by a question mark) by
+Oracle-friendly column expressions is performed for the entire SQL
+expression.
 
 ```common-lisp
 (defvar *connection*
@@ -74,9 +77,12 @@ Oracle-friendly expressions is performed for all queries.
 
 The effectve query would be
 `"SELECT * FROM somewhere WHERE flag = :1 OR updated_at > :2"`.
-If question mark appears inside a quoted string of the SQL query,
-then the effective query could not be identical to the original one.
-Automatic substitution of question marks may be disabled by setting
+If a question mark appears inside a quoted string of the SQL query,
+then the effective query could not be identical to the original
+one. The rule of thumb is to avoid using French punctuation style in
+literal constants inside the main body of SQL queries (bound strings
+are processed as is), and to put space before every placeholder. Automatic
+substitution of question marks may be disabled by setting
 `format-placeholders` key parameter of `dbi:connect` to NIL.
 
 ## Testing
