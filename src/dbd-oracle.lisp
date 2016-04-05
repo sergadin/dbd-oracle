@@ -1016,7 +1016,7 @@ statement or NIL, if the statement execuded something else."
 (defmethod execute-using-connection ((conn <dbd-oracle-connection>) (query <dbd-oracle-query>) params)
   (let ((database (connection-handle conn))
         (prepared (query-prepared query))
-        result-types
+        (result-types :as-is) ; convert integers and floats into corresponding LISP values
         (field-names t))
     ;;(reset-statement prepared)
     (let ((count 0))
