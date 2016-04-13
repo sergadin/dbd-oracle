@@ -91,7 +91,7 @@ This code was tested using Oracle 11g server under following client configuratio
 
 * 64-bit Clozure CL 1.9 under Windows 7 using 64-bit version of Oracle instant client 12.1.0.1
 * 64-bit SBCL 1.3.2 under Ubuntu 14.04 64-bit using Oracle instant client 12.1.0.1
-
+* 32-bit LispWorks Personal Edition on Mac OS X 10.10 using 32-bit version of Oracle instant client 11.2.0.4
 
 ## License
 
