@@ -1,9 +1,3 @@
-#|
-  CL-DBI Database driver for ORACLE.
-
-  Author: Sergey Afonin (serg@msu.ru)
-|#
-
 (in-package :cl-user)
 (defpackage dbd-oracle-asd
   (:use :cl :asdf))
@@ -14,7 +8,7 @@
   :author "Sergey Afonin <serg@msu.ru>"
   :maintainer "Sergey Afonin <serg@msu.ru>"
   :licence "Lessor Lisp General Public License"
-  :description "ORACLE database driver for CL-DBI"
+  :description "ORACLE database driver for CL-DBI."
   :long-description "A CL-DBI interface for ORACLE database based on
   OCI bindings provided by CLSQL library."
   :version "1.0"
@@ -25,5 +19,13 @@
                (:file "oracle-api")
                (:file "oracle-loader")
                (:file "foreign-resources")
-               (:file "dbd-oracle")))
+               (:file "dbd-oracle"))
 
+  :in-order-to ((test-op (load-op dbd-oracle-test)))
+  :perform (test-op :after (op c)
+                    (funcall (intern (symbol-name '#:run-tests) :lift)
+                             :config :generic)))
+
+(defmethod operation-done-p
+    ((o test-op) (c (eql (find-system 'dbd-oracle))))
+  (values nil))

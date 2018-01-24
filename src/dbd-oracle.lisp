@@ -1,6 +1,6 @@
 ;;;; -*- Mode: LISP; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 ;;;; *************************************************************************
-;;;; This file is a modified version of CLSQL oracle-sql.lisp.
+;;;; This file is a MODIFIED version of CLSQL oracle-sql.lisp.
 ;;;; Major modifications are:
 ;;;; - implementation of DBI interfaces;
 ;;;; - query preparation and parameters bindings via OCI calls.
@@ -73,6 +73,11 @@ likely that we'll have to worry about the CMUCL limit."))
   (defconstant SQLT-BIN 23)
   (defconstant SQLT-CLOB 112)
   (defconstant SQLT-BLOB 113))
+
+;; New versions, e.g. 12c, supports varchar2 strings of length 4000. Smaller limit may
+;; cause performance degradation, due to CLOB processing overhead.
+(defconstant +maximal-varchar2-length+ 2000
+  "All strings exceedinng that length are bound as CLOBs, not VARCHAR2 data types.")
 
 ;;; Note that despite the suggestive class name (and the way that the
 ;;; *DEFAULT-DATABASE* variable holds an object of this class), a DB
@@ -569,7 +574,7 @@ the length of that format.")
     ((integerp value) :integer)
     ((floatp value) :float)
     ((stringp value)
-     (if (< (length value) 2000) :string :clob))
+     (if (< (length value) +maximal-varchar2-length+) :string :clob))
     (t
      (error '<dbi-programming-error>
             :message (format nil "Unsupported type of bind parameter: ~A." (type-of value))))))
@@ -762,7 +767,7 @@ the length of that format.")
 (uffi:def-type void-pointer-pointer (* :void-pointer))
 
 (defun make-query-cursor-cds (database stmthp result-types field-names)
-  (declare (optimize (safety 3) #+nil (speed 3))
+  (declare (optimize #+:debug (safety 3) #-debug (speed 3))
            (type <oracle-database> database)
            (type pointer-pointer-void stmthp))
   (with-slots (errhp) database
@@ -815,10 +820,13 @@ the length of that format.")
                              (deref-vp errhp))
                (let ((*scale (uffi:deref-pointer scale :byte))
                      (*precision (uffi:deref-pointer precision :short)))
+                 ;; (format t "scale=~d, precision=~d~%" *scale *precision)
 
-                 ;;(format t "scale=~d, precision=~d~%" *scale *precision)
+                 ;; NUMBER fields, specified by scale=-127 and precision=0, can store
+                 ;; any numeric values, including real values. For this reason such
+                 ;; fields should be treated as floating point.
                  (cond
-                  ((or (and (minusp *scale) (zerop *precision))
+                  ((or ; (and (minusp *scale) (zerop *precision))
                        (and (zerop *scale) (plusp *precision)))
                    (setf buffer (acquire-foreign-resource :int +n-buf-rows+)
                          sizeof 4                       ;; sizeof(int)
@@ -969,7 +977,7 @@ statement or NIL, if the statement execuded something else."
 
 
 ;;;
-;;; ======== DBD related methods
+;;; DBD related methods.
 ;;;
 
 

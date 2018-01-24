@@ -1,0 +1,72 @@
+# See https://github.com/cbandy/travis-oracle and .travis/oracle/README.md
+# for the instructions on using Oracle on Travis CI
+#
+# SQL*Plus is installed to $ORACLE_HOME/bin/sqlplus, and the current user has both
+# normal and DBA access without a password, i.e. / and / AS SYSDBA.
+#
+# OCI and OCCI libraries and header files are in $ORACLE_HOME/lib and
+# $ORACLE_HOME/rdbms/public, respectively.
+#
+# Secure variables are created using Travis CLI
+#  gem install travis
+#  travis encrypt VARNAME="value" --add
+#
+
+language: common-lisp
+sudo: required
+
+env:
+  global:
+    - PATH=~/.roswell/bin:$PATH
+    - ROSWELL_INSTALL_DIR=$HOME/.roswell
+    # Oracle XE
+    - ORACLE_COOKIE=sqldev
+    - ORACLE_FILE=oracle11g/xe/oracle-xe-11.2.0-1.0.x86_64.rpm.zip
+    - ORACLE_HOME=/u01/app/oracle/product/11.2.0/xe
+    - ORACLE_SID=XE
+    - NLS_LANG=American_America.UTF8
+    # Some sensitive information
+    - secure: SR7OOUwi2zamAIlVKgJnvRVw+jCToofLsnJkR/02aucDc5QB7yM4QuXPJ4A5ZDqdyoLf/K0pMLabnkWzGLZye73BFQ1c6t7R0NynTwftp4jMUh/3a8wDAgVkF/MmEwxw1/Z3fCqgzBamTFUeUPeNwGJflfiRCLsmaBRXNklz8+5SXxHrNKCDl3M7dp9Xpxodlu55zxiGlSOipARU0W2izrX9pchs83NiUvnoqmA5B4mcnq0mvIUWm4dwxOPHFadpf4GaAenaJ3bBfurVR1tNpveSp+P4vImkriWSC4DmxKWJsh6knKCYKRZxvlS9Geo3pHZ7tRgfOS9J3Jh+NL47MHMyf09l/iiLbcsLg1L/iG4KCo41FDV+M75YPFAoUp0Us8NzMkf+AeG/9IMrLKE9olDhPkvSfPHhAJEOSnuOxeRzkfOQ2SLd9LemglxG+t7Ck18cedsvA2QTcloHsiTYXpg6B7Hfk7+b5JyunVr35jg0LDUYyi8nrCucSSAYZheAKWKfBCazVKjoR8hG0qVtvKp80+7HyXW9Q9LTvGqkdyfOp24T3ClETyMUef9IxosVIaOKRbllr1qU643HLAXB2l4mkVJkqzco6qF+VlYctIrONKT70yNK2Qcpq/+zBAvMyd2UR3E6R8i/ibDWRZK/690/tzCfZ4oDGBaA7iWCaLs=
+    - secure: YmmgoSvbyuCs4V2Je60BXCi6NKHA+ZbDjt5knQuKn2u/n2xsN4MjminVBC40xDgFEK2ZW808kkv4EOmbPaOkIMwsOcCY9cF9u42bC3keZ/eAi7aBjw5oLtaxxk9itFvI2LPIndKfL6PbIb1xH6JxQe0lqaxFAjQBRyRSV1B3hH44xWUuD3BK6kdpwb32osTw43O2JIQdL/5JBDnRsvspRgrBK0CVBMm2MU7skAHKOmw/teHDGCgWxNueApIHMXI+yUfEKDfO2eP9/GPW09uCtvaUUPs5Dn4kC9DFUTAopQ5teGeLDiXYxxcphV1B8ezLcGOxlO/5GmcAv/dXg6n3q4atAHUBjdIz1J2T54PVnmskU/B4oovqSMunmkEvPzTPVGuxyW1lQXVygPQa3t1zYUPHQLD9IRsN+HymKadGyuGlZFAL5ri8jmW0yF8DtwjDVPOHgM9uilirihRYWj2LeKAHWAAuWLMQstqXlX/IzD7Fzg7lPx43XcvaC3nQky3larF+T+rJdrLcQToUr5Kg/GykVoIdDhSt6HDGPD86AmZCUsb7GRjrVbeP7QScd8oOBMp6K1hr9WX+MiLC0k6Lnq91OB4njW/OIVT0AWe0iXONg8ddN3R6q2ZWJ93rEM5+x+QZRSiGW4iKyvX/domaH8wKh+erXyBgQ0X1nq9wAqs=
+  matrix:
+    - LISP=sbcl-bin COVERALLS=true
+    - LISP=ccl-bin
+
+matrix:
+  allow_failures:
+    - env: LISP=sbcl-bin
+
+before_install:
+  - .travis/oracle/download.sh
+  - .travis/oracle/install.sh
+  - .travis/setup_db_for_testing.sh
+
+install:
+  # Install roswell
+  - curl -L https://raw.githubusercontent.com/snmsts/roswell/release/scripts/install-for-ci.sh | sh
+
+  # Coveralls support
+  - git clone https://github.com/fukamachi/cl-coveralls ~/lisp/cl-coveralls
+
+  # LIFT testing system
+  - ros -e '(ql:quickload "lift")'
+
+cache:
+  directories:
+    - $HOME/.roswell
+
+script:
+  - if [ "$COVERALLS" ]; then
+         ros -s lift
+             -s cl-coveralls
+             -e '(coveralls:with-coveralls (:exclude "test")
+                       (push (pathname "~/sergadin/dbd-oracle/") asdf:*central-registry*)
+                       (ql:quickload "dbd-oracle-test")
+                       (lift:describe-test-result (lift:run-tests :suite :root) t))';
+    else
+         ros -s lift
+             -e '(progn
+              (push (pathname "~/sergadin/dbd-oracle/") asdf:*central-registry*)
+              (ql:quickload "dbd-oracle-test")
+              (lift:describe-test-result (lift:run-tests :suite :root) t))';
+    fi

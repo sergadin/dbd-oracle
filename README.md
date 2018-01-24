@@ -1,5 +1,9 @@
 # dbd-oracle: Oracle database driver for CL-DBI
 
+[![Build Status](https://travis-ci.org/sergadin/dbd-oracle.svg?branch=master)](https://travis-ci.org/sergadin/dbd-oracle)
+[![Coverage Status](https://coveralls.io/repos/github/sergadin/dbd-oracle/badge.svg?branch=master)](https://coveralls.io/github/sergadin/dbd-oracle?branch=master)
+[![Quicklisp](http://quickdocs.org/badge/dbd-oracle.svg)](http://quickdocs.org/dbd-oracle/)
+
 This driver is based on OCI bindings developed for CLSQL.
 
 ## Usage
