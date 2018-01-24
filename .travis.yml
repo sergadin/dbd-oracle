@@ -37,9 +37,9 @@ matrix:
     - env: LISP=sbcl-bin
 
 before_install:
-  - .travis/oracle/download.sh
-  - .travis/oracle/install.sh
-  - .travis/setup_db_for_testing.sh
+  - sh ~/.travis/oracle/download.sh
+  - sh ~/.travis/oracle/install.sh
+  - sh ~/.travis/setup_db_for_testing.sh
 
 install:
   # Install roswell
