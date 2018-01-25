@@ -38,10 +38,10 @@ matrix:
 
 before_install:
   - pwd
-  - ls -lR
-  - ~/sergadin/dbd-oracle/.travis/oracle/download.sh
-  - ~/sergadin/dbd-oracle/.travis/oracle/install.sh
-  - ~/sergadin/dbd-oracle/.travis/setup_db_for_testing.sh
+  - ls -laR
+  - .travis/oracle/download.sh
+  - .travis/oracle/install.sh
+  - .travis/setup_db_for_testing.sh
 
 install:
   # Install roswell
@@ -58,6 +58,7 @@ cache:
     - $HOME/.roswell
 
 script:
+  - pwd
   - if [ "$COVERALLS" ]; then
          ros -s lift
              -s cl-coveralls
