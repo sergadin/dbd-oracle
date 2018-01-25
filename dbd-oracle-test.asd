@@ -16,4 +16,6 @@
   :components ((:file "package")
                (:file "root")
                (:file "tools")
-               (:file "trivial")))
+               (:file "trivial")
+               (:file "extended")
+               (:file "errors")))

@@ -23,8 +23,6 @@
 
 (in-package :dbd.oracle)
 
-(cl-syntax:use-syntax :annot)
-
 
 ;;;; arbitrary parameters, tunable for performance or other reasons
 
@@ -522,10 +520,22 @@ the length of that format.")
 ;; QUERY-CURSOR, and the new QUERY-CURSOR becomes responsible for
 ;; freeing the STMTHP when it is no longer needed.
 
+(defclass <binding-info> ()
+  ((user-binding-type :initarg :user-binding-type)
+   (sqlt :initarg :sqlt)
+   (c-value :initarg :c-value)
+   (c-value-size :initarg :c-value-size))
+  (:documentation "Description of bound value."))
+
+(defun make-bi (user-binding-type sqlt c-value c-value-size)
+  "Make an instance of `<binding-info>'."
+  (make-instance '<binding-info> :user-binding-type user-binding-type :sqlt sqlt :c-value c-value :c-value-size c-value-size))
+
 (defclass <oracle-stmt> ()
   ((database :initarg :database :reader database)
    (oci-stmthp :initarg :oci-stmthp :reader oci-stmthp) ; statement handle pointer
-   (bindings :initform nil :reader bindings)
+   (bindings :initform nil)
+   (reusablep :initform nil :initarg :reusablep)
    (binding-types :initarg :binding-types :reader binding-types)
    (stmt-type :type integer :initarg :stmt-type)
    (select-p :initarg :select-p :reader select-p)
@@ -534,7 +544,7 @@ the length of that format.")
    (rows-affected :reader rows-affected))
   (:documentation "Representation of prepared SQL statement."))
 
-(defun prepare-statement (database sql-stmt)
+(defun prepare-statement (database sql-stmt &key reusablep)
   (with-slots (envhp svchp errhp) database
     (uffi:with-foreign-strings ((c-stmt-string sql-stmt))
       (let ((stmthp (uffi:allocate-foreign-object :pointer-void))
@@ -567,7 +577,8 @@ the length of that format.")
                          :stmt-type (uffi:deref-pointer stmttype :unsigned-short)
                          :binding-types types
                          :result-types result-types
-                         :field-names field-names))))))
+                         :field-names field-names
+                         :reusablep reusablep))))))
 
 (defun guess-object-type (value)
   (cond
@@ -592,6 +603,28 @@ the length of that format.")
        (error '<dbi-programming-error>
               :message
               (format nil "Unknown type ~A." type))))))
+
+(defun valuate-bound-parameter (stmt position value &key binding-type)
+  "Copy new value to a bound parameter, i.e. to a uffi-allocated memory."
+  (declare (ignore binding-type))
+  (with-slots (bindings binding-types) stmt
+    (with-slots (user-binding-type sqlt c-value c-value-size)
+        (or (cdr (assoc position bindings))
+            (error '<dbi-programming-error>
+                   :message (format nil "Parameter :~A was not bound" position)
+                   :error-code nil))
+      (case user-binding-type
+        ((:string :clob :blob)
+         (error '<dbi-notsupported-error>
+                :message "Unable to change the value of a bound variable-length parameter."
+                :error-code -1))
+        ((:int :integer :short :bigint)
+         (setf (uffi:deref-pointer c-value :int) value))
+        ((:float :double :numeric)
+         (setf (uffi:deref-pointer c-value :double) value))
+        (t
+         (error '<dbi-programming-error> :message "Unsupported bind parameter type." :error-code nil)))
+      t)))
 
 (defun bind-parameter (stmt position value &key binding-type)
   (check-type stmt <oracle-stmt>)
@@ -640,13 +673,24 @@ the length of that format.")
                          +unsigned-int-null-pointer+ ;; curelep
                          +oci-default+ :database database)
 
-        (push (cons position c-value) bindings))
+        (push (cons position (make-bi user-binding-type sqlt c-value c-value-size)) bindings))
       t)))
+
+(defun bind-or-valuate-parameter (stmt position value &key binding-type)
+  (check-type stmt <oracle-stmt>)
+  (with-slots (bindings) stmt
+    (if (assoc position bindings)
+        (if (slot-value stmt 'reusablep)
+            (valuate-bound-parameter stmt position value :binding-type binding-type)
+            (error '<dbi-programming-error>
+                   :message "Statement is not reusable, please call PREPARE aagain."
+                   :error-code -1))
+        (bind-parameter stmt position value :binding-type binding-type))))
 
 
 (defun sql-prepared-stmt-exec (stmt database result-types field-names)
   "Return cursor if statement is a select query and NIL otherwise."
-  (with-slots (oci-stmthp select-p rows-affected stmt-type) stmt
+  (with-slots (oci-stmthp select-p rows-affected stmt-type reusablep) stmt
     (with-slots (envhp svchp errhp) database
       (unwind-protect
            (let ((iters (if select-p 0 1)))
@@ -667,10 +711,11 @@ the length of that format.")
                                :database database)
                  (setf (slot-value stmt 'rows-affected)
                        (uffi:deref-pointer rows-affected 'ub4)))))
-        ;; free resources unless a query
-        (unless select-p
-          (oci-handle-free (deref-vp oci-stmthp) +oci-htype-stmt+)
-          (uffi:free-foreign-object oci-stmthp)))
+        ;; free resources unless a query, or a reusable statement
+        (unless (or select-p reusablep)
+          (release-resources stmt)
+          #+nil(oci-handle-free (deref-vp oci-stmthp) +oci-htype-stmt+)
+          #+nil(uffi:free-foreign-object oci-stmthp)))
       (cond
         (select-p
          (make-query-cursor database oci-stmthp result-types field-names))
@@ -975,134 +1020,21 @@ statement or NIL, if the statement execuded something else."
   t)
 
 
+(defun variable-length-type (type)
+  (member type '(:string :clob :blob)))
 
-;;;
-;;; DBD related methods.
-;;;
-
-
-@export
-(defclass <dbd-oracle> (<dbi-driver>) ())
-
-@export
-(defclass <dbd-oracle-connection> (<dbi-connection>)
-  ((%format-placeholders
-    :type boolean
-    :initarg :format-placeholders)
-   (%rows-affected
-    :type integer
-    :documentation "Number of rows affected by the last INSERT/UPDATE/DELETE statement.")))
-
-
-(defclass <dbd-oracle-query> (<dbi-query>)
-  (%cursor))
-
-(defun questions->placeholders (query-string)
-  "Convert the query from CL-DBI placeholder syntax into ORACLE-friendly colon notation."
-  (loop
-     with result = ""
-     for last-pos = 0 then (+ pos 2)
-     for pos = (search " ?" query-string :start2 last-pos)
-     for count from 1
-     do
-       (setf result (concatenate
-                     'string result
-                     (subseq query-string last-pos pos)
-                     (when pos (format nil " :~D" count))))
-     while pos
-     finally (return result)))
-
-(defmethod prepare ((conn <dbd-oracle-connection>) (sql string) &key)
-  (make-instance '<dbd-oracle-query>
-                 :connection conn
-                 :prepared (prepare-statement (connection-handle conn)
-                                              (if (slot-value conn '%format-placeholders)
-                                                  (questions->placeholders sql)
-                                                  sql))))
-
-
-(defmethod execute-using-connection ((conn <dbd-oracle-connection>) (query <dbd-oracle-query>) params)
-  (let ((database (connection-handle conn))
-        (prepared (query-prepared query))
-        (result-types :as-is) ; convert integers and floats into corresponding LISP values
-        (field-names t))
-    ;;(reset-statement prepared)
-    (let ((count 0))
-      (dolist (param params)
-        (bind-parameter prepared (incf count) param)))
-    (setf (slot-value query '%cursor)
-          (sql-prepared-stmt-exec prepared database result-types field-names))
-    ;; Copy number of updated rows from the statement to the connection instance
-    ;; because row-count operates on connection level.
-    (when (slot-boundp prepared 'rows-affected)
-      (setf (slot-value conn '%rows-affected)
-            (slot-value prepared 'rows-affected)))
-    query))
-
-
-(defmethod fetch-using-connection ((conn <dbd-oracle-connection>) (query <dbd-oracle-query>))
-  (let ((database (connection-handle conn))
-        (cursor (slot-value query '%cursor))
-        (include-field-names t))
-    (car (process-cursor cursor database include-field-names :fetch-size 1))))
-
-
-(defmethod make-connection ((driver <dbd-oracle>) &key database-name username password
-                                                    (format-placeholders t)
-                                                    (encoding :utf-8))
-  "Connect to ORACLE database specified by the connect-string
-DATABASE-NAME using USERNAME/PASSWORD. Encoding is passed to CFFI
-string conversion functions.
-
-Example of DATABASE-NAME:
-  127.0.0.1:1521/orcl
-"
-  (unless *oracle-library-loaded*
-    (oracle-load-foreign))
-  (make-instance '<dbd-oracle-connection>
-     :database-name database-name
-     :auto-commit nil
-     :handle (oracle-connect database-name username password)
-     :format-placeholders format-placeholders))
-
-
-(defmethod disconnect ((conn <dbd-oracle-connection>))
-  (let ((database (connection-handle conn)))
-    (osucc (oci-logoff (deref-vp (svchp database))
-                       (deref-vp (errhp database))))
-    (osucc (oci-handle-free (deref-vp (envhp database)) +oci-htype-env+))
-    ;; Note: It's neither required nor allowed to explicitly deallocate the
-    ;; ERRHP handle here, since it's owned by the ENVHP deallocated above,
-    ;; and was therefore automatically deallocated at the same time.
+(defgeneric release-resources (stmt)
+  (:documentation "Release all uffi-allocated resources associated to the statement.")
+  (:method ((stmt <oracle-stmt>))
+    (with-slots (oci-stmthp select-p bindings database) stmt
+      (with-slots (envhp svchp errhp) database
+        (oci-handle-free (deref-vp oci-stmthp) +oci-htype-stmt+)
+        (uffi:free-foreign-object oci-stmthp))
+      ;; Deallocate memory used for passing bound parameters values
+      (loop for (nil . bi) in bindings
+         do (with-slots (user-binding-type c-value) bi
+              ;; Both free version are essentially the same?
+              (if (variable-length-type user-binding-type)
+                  (uffi:free-cstring c-value)
+                  (uffi:free-foreign-object c-value)))))
     t))
-
-
-(defmethod begin-transaction ((conn <dbd-oracle-connection>))
-  (let ((database (connection-handle conn))
-        (timeout-sec 1))
-    (declare (ignore database timeout-sec))
-    ;;
-    ;; OCILogon creates a session that starts transaction automatically
-    ;;
-    #+(or)(osucc (oci-trans-start (deref-vp (svchp database))
-                            (deref-vp (errhp database))
-                            timeout-sec
-                            +oci-trans-new+))
-    t))
-
-(defmethod commit ((conn <dbd-oracle-connection>))
-  (let ((database (connection-handle conn)))
-    (with-slots (svchp errhp) database
-      (osucc (oci-trans-commit (deref-vp svchp)
-                               (deref-vp errhp)
-                               0)))))
-
-(defmethod rollback ((conn <dbd-oracle-connection>))
-  (let ((database (connection-handle conn)))
-    (osucc (oci-trans-rollback (deref-vp (svchp database))
-                               (deref-vp (errhp database))
-                               0))))
-
-(defmethod row-count ((conn <dbd-oracle-connection>))
-  (when (slot-boundp conn '%rows-affected)
-    (slot-value conn '%rows-affected)))

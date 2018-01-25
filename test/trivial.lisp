@@ -111,6 +111,7 @@
   (ensure-same (get-first (run connection "SELECT n AS val FROM realval") :val) 17.17 :test #'almost=)
   ;; update, check result, and rollback the transaction
   (execute-command connection "UPDATE realval SET n = ? WHERE n > ?" 100 3)
+  (ensure-same (dbi:row-count connection) 1 :report "Expected to update ONE row.")
   (ensure-same (get-first (run connection "SELECT n AS val FROM realval") :val) 100 :test #'almost= :report "Value was not updated")
   (dbi:rollback connection)
   ;; validate that changes are rolled back
@@ -118,6 +119,7 @@
 
   ;;; Repeat the procedure with switched arguments to UPDATE. No updates should happen.
   (execute-command connection "UPDATE realval SET n = ? WHERE n > ?" 3 100)
+  (ensure-same (dbi:row-count connection) 0 :report "Expected to update no rows.")
   (ensure-same (get-first (run connection "SELECT n AS val FROM realval") :val) 17.17 :test #'almost= :report "Value was updated")
   (dbi:rollback connection)
   t)

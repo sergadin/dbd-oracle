@@ -15,5 +15,5 @@
 (defun get-first (rows column-key)
   (getf (first rows) column-key))
 
-(defun almost= (a b)
-   (< (abs (- a b)) 0.000001))
+(defun almost= (a b &optional (delta 1d-6))
+   (< (abs (- a b)) delta))

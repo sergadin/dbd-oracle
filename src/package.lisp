@@ -6,6 +6,7 @@
         :dbi.driver
         :dbi.error)
   (:export #:*foreign-library-types*
-           #:*foreign-library-search-paths*)
+           #:*foreign-library-search-paths*
+           #:with-reusable-query)
   (:shadowing-import-from :dbi.driver
                           :disconnect))

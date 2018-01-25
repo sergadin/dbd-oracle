@@ -63,7 +63,6 @@ cache:
     - $HOME/.roswell
 
 script:
-  - pwd
   - if [ "$COVERALLS" ]; then
          ros -s lift
              -s cl-coveralls

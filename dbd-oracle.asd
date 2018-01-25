@@ -19,7 +19,9 @@
                (:file "oracle-api")
                (:file "oracle-loader")
                (:file "foreign-resources")
-               (:file "dbd-oracle"))
+               (:file "dbd-oracle")
+               (:file "dbd-oracle-dbi")
+               (:file "reusable-query"))
 
   :in-order-to ((test-op (load-op dbd-oracle-test)))
   :perform (test-op :after (op c)
