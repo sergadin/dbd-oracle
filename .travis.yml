@@ -44,6 +44,7 @@ before_install:
   - .travis/oracle/download.sh
   - .travis/oracle/install.sh
   - .travis/setup_db_for_testing.sh
+  - find $ORACLE_HOME -name "*clntsh*"
 
 install:
   # Install roswell
@@ -65,13 +66,11 @@ script:
          ros -s lift
              -s cl-coveralls
              -e '(coveralls:with-coveralls (:exclude "test")
-                       (push (pathname "~/sergadin/dbd-oracle/") asdf:*central-registry*)
                        (ql:quickload "dbd-oracle-test")
                        (lift:describe-test-result (lift:run-tests :suite :root) t))';
     else
          ros -s lift
              -e '(progn
-              (push (pathname "~/sergadin/dbd-oracle/") asdf:*central-registry*)
               (ql:quickload "dbd-oracle-test")
               (lift:describe-test-result (lift:run-tests :suite :root) t))';
     fi
