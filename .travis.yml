@@ -38,7 +38,9 @@ matrix:
 
 before_install:
   - pwd
-  - ls -laR
+  - ls -laR .travis
+  - find .travis -name "*.sh" -exec chmod +x {} \;
+  - ls -laR .travis
   - .travis/oracle/download.sh
   - .travis/oracle/install.sh
   - .travis/setup_db_for_testing.sh
