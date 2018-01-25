@@ -4,7 +4,10 @@
 (deftestsuite root ()
   ((user-name "scott")
    (password "tiger")
-   (connect-string "127.0.0.1:1521/orcl"))
+   (connect-string (let ((host "127.0.0.1")
+                         (port "1521")
+                         (oracle-sid (or (dbd.oracle::getenv "ORACLE_SID") "orcl")))
+                     (format nil "~A:~A/~A" host port oracle-sid))))
   (:dynamic-variables
    (dbd.oracle:*foreign-library-search-paths* '(#p"/opt/oracle/")))
   (:documentation
