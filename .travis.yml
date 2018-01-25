@@ -24,6 +24,7 @@ env:
     - ORACLE_FILE=oracle11g/xe/oracle-xe-11.2.0-1.0.x86_64.rpm.zip
     - ORACLE_HOME=/u01/app/oracle/product/11.2.0/xe
     - ORACLE_SID=XE
+    - LD_LIBRARY_PATH=LD_LIBRARY_PATH=$ORACLE_HOME/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
     - NLS_LANG=American_America.UTF8
     # Some sensitive information
     - secure: SR7OOUwi2zamAIlVKgJnvRVw+jCToofLsnJkR/02aucDc5QB7yM4QuXPJ4A5ZDqdyoLf/K0pMLabnkWzGLZye73BFQ1c6t7R0NynTwftp4jMUh/3a8wDAgVkF/MmEwxw1/Z3fCqgzBamTFUeUPeNwGJflfiRCLsmaBRXNklz8+5SXxHrNKCDl3M7dp9Xpxodlu55zxiGlSOipARU0W2izrX9pchs83NiUvnoqmA5B4mcnq0mvIUWm4dwxOPHFadpf4GaAenaJ3bBfurVR1tNpveSp+P4vImkriWSC4DmxKWJsh6knKCYKRZxvlS9Geo3pHZ7tRgfOS9J3Jh+NL47MHMyf09l/iiLbcsLg1L/iG4KCo41FDV+M75YPFAoUp0Us8NzMkf+AeG/9IMrLKE9olDhPkvSfPHhAJEOSnuOxeRzkfOQ2SLd9LemglxG+t7Ck18cedsvA2QTcloHsiTYXpg6B7Hfk7+b5JyunVr35jg0LDUYyi8nrCucSSAYZheAKWKfBCazVKjoR8hG0qVtvKp80+7HyXW9Q9LTvGqkdyfOp24T3ClETyMUef9IxosVIaOKRbllr1qU643HLAXB2l4mkVJkqzco6qF+VlYctIrONKT70yNK2Qcpq/+zBAvMyd2UR3E6R8i/ibDWRZK/690/tzCfZ4oDGBaA7iWCaLs=
