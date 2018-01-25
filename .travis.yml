@@ -37,9 +37,11 @@ matrix:
     - env: LISP=sbcl-bin
 
 before_install:
-  - sh ~/sergadin/dbd-oracle/.travis/oracle/download.sh
-  - sh ~/sergadin/dbd-oracle/.travis/oracle/install.sh
-  - sh ~/sergadin/dbd-oracle/.travis/setup_db_for_testing.sh
+  - pwd
+  - ls -lR
+  - ~/sergadin/dbd-oracle/.travis/oracle/download.sh
+  - ~/sergadin/dbd-oracle/.travis/oracle/install.sh
+  - ~/sergadin/dbd-oracle/.travis/setup_db_for_testing.sh
 
 install:
   # Install roswell
