@@ -63,6 +63,6 @@
                                 :password password)
       (ensure-same (get-first (run conn2 count-sql) :cnt) 1
                    :test #'= :report "Committed data is unaccessible"))
-    ;; Drom the table
+    ;; Drop the table
     (execute-command connection drop-sql)
     t))
