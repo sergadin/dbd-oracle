@@ -16,6 +16,7 @@
   :pathname "src"
   :components ((:file "package")
                (:file "oracle-constants")
+               (:file "ora-error-codes")
                (:file "oracle-api")
                (:file "oracle-loader")
                (:file "foreign-resources")
