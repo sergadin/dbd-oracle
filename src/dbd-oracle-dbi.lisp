@@ -77,7 +77,7 @@
 
 (defmethod make-connection ((driver <dbd-oracle>) &key database-name username password
                                                     (format-placeholders t)
-                                                    (encoding :utf-8))
+                                                    encoding)
   "Connect to ORACLE database specified by the connect-string
 DATABASE-NAME using USERNAME/PASSWORD. Encoding is passed to CFFI
 string conversion functions.
@@ -90,7 +90,8 @@ Example of DATABASE-NAME:
   (make-instance '<dbd-oracle-connection>
      :database-name database-name
      :auto-commit nil
-     :handle (oracle-connect database-name username password)
+     :handle (oracle-connect database-name username password
+                             :encoding (or encoding (nls-lang-encoding) :utf-8))
      :format-placeholders format-placeholders))
 
 

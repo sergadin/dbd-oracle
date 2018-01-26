@@ -91,3 +91,22 @@ well as any of the filenames in any of the *foreign-library-search-paths*"
                                  :module "dbd-oracle"
                                  :supporting-libraries *oracle-supporting-libraries*)
   (setq *oracle-library-loaded* t))
+
+
+(defun nls-lang-encoding ()
+  "Extract encoding from the NLS_LANG environment variable. Put hyphenation between UTF and number."
+  (flet ((hyphenize (enc)
+           "Insert a hyphenation mark after utf, if not present. UTF8 ==> UTF-8"
+           (if (string-equal enc "UTF" :end1 3)
+               (format nil "UTF-~A" (subseq enc 3))
+               enc)))
+    (let* ((nls-lang (getenv "NLS_LANG"))
+           (dot-position (position #\. nls-lang)))
+      (if dot-position
+          (handler-case
+              (intern (hyphenize (string-upcase (subseq nls-lang (1+ dot-position)))) :keyword)
+            (t ()
+              (warn 'dbi:<dbi-warning> :format-control "Can not parse NLS_LANG: ~a"
+                    :format-arguments `(,nls-lang))
+              nil))
+          nil))))

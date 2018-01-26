@@ -43,8 +43,7 @@
     (dbi:with-connection (conn2 :oracle
                                 :database-name connect-string
                                 :username user-name
-                                :password password
-                                :encoding :utf-8)
+                                :password password)
       (ensure-same (get-first (run conn2 count-sql) :cnt) 0
                    :test #'= :report "Access to data from other connection")
       (dbi:commit conn2))
@@ -52,8 +51,7 @@
     (dbi:with-connection (conn2 :oracle
                                 :database-name connect-string
                                 :username user-name
-                                :password password
-                                :encoding :utf-8)
+                                :password password)
       (ensure-same (get-first (run conn2 count-sql) :cnt) 0
                    :test #'= :report "Access to data from other connection"))
     ;; OK, do commit in connection
@@ -62,8 +60,7 @@
     (dbi:with-connection (conn2 :oracle
                                 :database-name connect-string
                                 :username user-name
-                                :password password
-                                :encoding :utf-8)
+                                :password password)
       (ensure-same (get-first (run conn2 count-sql) :cnt) 1
                    :test #'= :report "Committed data is unaccessible"))
     ;; Drom the table
