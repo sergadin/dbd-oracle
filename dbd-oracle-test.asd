@@ -18,4 +18,5 @@
                (:file "tools")
                (:file "trivial")
                (:file "extended")
+               (:file "clobs")
                (:file "errors")))

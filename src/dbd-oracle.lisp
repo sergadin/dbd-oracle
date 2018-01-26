@@ -637,9 +637,12 @@ the length of that format.")
                                     (guess-object-type value)))  ; user-suplied type of value
              (sqlt (clsql-type->oracle-sqlt user-binding-type))) ; Oracle's type for DBI binding-type
         (case user-binding-type
-          ((:string :clob)
+          ((:string)
            (setf c-value (uffi:convert-to-foreign-string value)
                  c-value-size (1+ (uffi-foreign-string-length c-value))))
+          ((:clob) ; just as string, but do not count zero symbol
+           (setf c-value (uffi:convert-to-foreign-string value)
+                 c-value-size (uffi-foreign-string-length c-value)))
           (:blob
            (setf c-value-size (length value)
                  c-value (uffi:allocate-foreign-object :unsigned-char c-value-size))

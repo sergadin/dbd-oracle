@@ -6,7 +6,7 @@
 
 
 (addtest (extended-functions)
-  parse-bind-bind
+  prepare-execute*
   ;;
   (execute-command connection "CREATE TABLE x (k INTEGER, r NUMBER)")
   ;; (execute-command connection "DELETE FROM x")
@@ -25,3 +25,47 @@
 
   (execute-command connection "DROP TABLE x")
   t)
+
+
+(addtest (extended-functions)
+  concurrent-connections
+  (let ((create-sql "CREATE TABLE concurrent_access (k INTEGER)")
+        (insert-sql "INSERT INTO concurrent_access (k) VALUES ( ?) ")
+        (count-sql "SELECT COUNT(*) AS cnt FROM concurrent_access")
+        (drop-sql "DROP TABLE concurrent_access"))
+    (handler-case
+        (execute-command connection create-sql)
+      (dbi:<dbi-database-error> (e)
+        (when (= (slot-value e 'dbi.error::error-code) dbd.oracle::+ora-name-used+)
+          (execute-command connection "DELETE FROM concurrent_access"))))
+    (execute-command connection insert-sql 7)
+    ;; Check that other connection can not access uncommitted changes
+    (dbi:with-connection (conn2 :oracle
+                                :database-name connect-string
+                                :username user-name
+                                :password password
+                                :encoding :utf-8)
+      (ensure-same (get-first (run conn2 count-sql) :cnt) 0
+                   :test #'= :report "Access to data from other connection")
+      (dbi:commit conn2))
+    ;; Again (we issued COMMIT in other connection)
+    (dbi:with-connection (conn2 :oracle
+                                :database-name connect-string
+                                :username user-name
+                                :password password
+                                :encoding :utf-8)
+      (ensure-same (get-first (run conn2 count-sql) :cnt) 0
+                   :test #'= :report "Access to data from other connection"))
+    ;; OK, do commit in connection
+    (dbi:commit connection)
+    ;; ... and check that data become accessable
+    (dbi:with-connection (conn2 :oracle
+                                :database-name connect-string
+                                :username user-name
+                                :password password
+                                :encoding :utf-8)
+      (ensure-same (get-first (run conn2 count-sql) :cnt) 1
+                   :test #'= :report "Committed data is unaccessible"))
+    ;; Drom the table
+    (execute-command connection drop-sql)
+    t))
