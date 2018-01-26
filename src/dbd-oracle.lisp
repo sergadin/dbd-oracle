@@ -7,6 +7,7 @@
 ;;;;
 ;;;; CLSSQL original banner follows.
 ;;;;
+
 ;;;; *************************************************************************
 ;;;; FILE IDENTIFICATION
 ;;;;
@@ -272,7 +273,6 @@ the length of that format.")
                       +oci-htype-server+ 0 +null-void-pointer-pointer+)
 
     (let ((db (make-instance '<oracle-database>
-                             :dsn "name"
                              :envhp envhp
                              :errhp errhp
                              :svchp svchp
