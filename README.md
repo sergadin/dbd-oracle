@@ -8,6 +8,10 @@ This driver is based on OCI bindings developed for CLSQL.
 
 ## Usage
 
+This library provides Oracle interface to CL-DBI, so any
+CL-DBI-complaint program should work. Please, note the following
+limitations.
+
 ### Connecting to ORACLE database
 
 Connection can be estabslished by providing appropriate database name
@@ -54,7 +58,7 @@ assigned to this variable should be a list of pathnames. For example,
 You may need to create a symbolic link for `libclntsh.so` pointing to
 an appropriate library, e.g. `libclntsh.so.12.1`.
 
-### Running queries: space before question
+### Writing queries: space before question
 
 Queries are evaluated using CL-DBI interface. Parameters bindings is
 not guaranteed to work properly due to incompatible syntax for
@@ -127,7 +131,43 @@ The library was manually tested using Oracle 11g server under following client c
 * 64-bit SBCL 1.3.2 under Ubuntu 14.04 64-bit using Oracle instant client 12.1.0.1
 * 32-bit LispWorks Personal Edition on Mac OS X 10.10 using 32-bit version of Oracle instant client 11.2.0.4
 
-Automated testing uses SBCL under Linux, and Oracle XE version 11.2.
+Automated testing uses SBCL under Linux, and Oracle XE version
+11.2.
+
+Testig procedure requires that the databse contain a table
+
+```SQL
+CREATE TABLE realval (
+    r REAL,
+    n NUMBER,
+    ns NUMBER(*, 5),
+    nps NUMBER(10, 2),
+    i INTEGER
+);
+INSERT INTO realval VALUES (17.17, 17.17, 17.17, 17.17, 17);
+```
+
+In order to run tests locally, you need to modify connection-related
+parameters in `test/root.lisp`, or modify your environment in
+accordance with the default values:
+
+```lisp
+(deftestsuite root ()
+  ((user-name "scott")
+   (password "tiger")
+   (connect-string (let ((host "127.0.0.1")
+                         (port "1521")
+                         (oracle-sid (or (dbd.oracle::getenv "ORACLE_SID") "orcl")))
+                     (format nil "~A:~A/~A" host port oracle-sid))))
+  (:dynamic-variables
+   (dbd.oracle:*foreign-library-search-paths* '(#p"/opt/oracle/")))
+  ...)
+```
+
+Tests can be started using
+```lisp
+(asdf:test-system "dbd-oracle")
+```
 
 ## License
 
