@@ -19,4 +19,5 @@
                (:file "trivial")
                (:file "extended")
                (:file "clobs")
+               (:file "long-running")
                (:file "errors")))
