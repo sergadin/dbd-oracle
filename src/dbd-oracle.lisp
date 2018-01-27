@@ -538,7 +538,7 @@ the length of that format.")
    (reusablep :initform nil :initarg :reusablep)
    (binding-types :initarg :binding-types :reader binding-types)
    (stmt-type :type integer :initarg :stmt-type)
-   (select-p :initarg :select-p :reader select-p)
+   (selectp :initarg :selectp :reader selectp)
    (field-names :initarg :field-names :accessor stmt-field-names)
    (result-types :initarg :result-types :reader result-types)
    (rows-affected :reader rows-affected))
@@ -548,7 +548,7 @@ the length of that format.")
   (with-slots (envhp svchp errhp) database
     (uffi:with-foreign-strings ((c-stmt-string sql-stmt))
       (let ((stmthp (uffi:allocate-foreign-object :pointer-void))
-            select-p
+            selectp
             types result-types field-names)
 
         (uffi:with-foreign-object (stmttype :unsigned-short)
@@ -568,12 +568,12 @@ the length of that format.")
                         (deref-vp errhp)
                         :database database)
 
-          (setq select-p (= (uffi:deref-pointer stmttype :unsigned-short) +oci-stmt-select+))
+          (setq selectp (= (uffi:deref-pointer stmttype :unsigned-short) +oci-stmt-select+))
 
           (make-instance '<oracle-stmt>
                          :database database
                          :oci-stmthp stmthp
-                         :select-p select-p
+                         :selectp selectp
                          :stmt-type (uffi:deref-pointer stmttype :unsigned-short)
                          :binding-types types
                          :result-types result-types
@@ -693,10 +693,10 @@ the length of that format.")
 
 (defun sql-prepared-stmt-exec (stmt database result-types field-names)
   "Return cursor if statement is a select query and NIL otherwise."
-  (with-slots (oci-stmthp select-p rows-affected stmt-type reusablep) stmt
+  (with-slots (oci-stmthp selectp rows-affected stmt-type reusablep) stmt
     (with-slots (envhp svchp errhp) database
       (unwind-protect
-           (let ((iters (if select-p 0 1)))
+           (let ((iters (if selectp 0 1)))
              (oci-stmt-execute (deref-vp svchp)
                                (deref-vp oci-stmthp)
                                (deref-vp errhp)
@@ -715,12 +715,12 @@ the length of that format.")
                  (setf (slot-value stmt 'rows-affected)
                        (uffi:deref-pointer rows-affected 'ub4)))))
         ;; free resources unless a query, or a reusable statement
-        (unless (or select-p reusablep)
+        (unless (or selectp reusablep)
           (release-resources stmt)
           #+nil(oci-handle-free (deref-vp oci-stmthp) +oci-htype-stmt+)
           #+nil(uffi:free-foreign-object oci-stmthp)))
       (cond
-        (select-p
+        (selectp
          (make-query-cursor database oci-stmthp result-types field-names))
         (t
          nil)))))
@@ -1029,7 +1029,7 @@ statement or NIL, if the statement execuded something else."
 (defgeneric release-resources (stmt)
   (:documentation "Release all uffi-allocated resources associated to the statement.")
   (:method ((stmt <oracle-stmt>))
-    (with-slots (oci-stmthp select-p bindings database) stmt
+    (with-slots (oci-stmthp selectp bindings database) stmt
       (with-slots (envhp svchp errhp) database
         (oci-handle-free (deref-vp oci-stmthp) +oci-htype-stmt+)
         (uffi:free-foreign-object oci-stmthp))
