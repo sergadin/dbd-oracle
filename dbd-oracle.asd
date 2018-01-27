@@ -11,7 +11,7 @@
   :description "ORACLE database driver for CL-DBI."
   :long-description "A CL-DBI interface for ORACLE database based on
   OCI bindings provided by CLSQL library."
-  :version "1.0"
+  :version (:read-file-form "VERSION")
   :depends-on (:dbi :cffi-uffi-compat :cffi)
   :pathname "src"
   :components ((:file "package")
