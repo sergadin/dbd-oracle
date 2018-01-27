@@ -135,7 +135,3 @@ Example of DATABASE-NAME:
 (defmethod row-count ((conn <dbd-oracle-connection>))
   (when (slot-boundp conn '%rows-affected)
     (slot-value conn '%rows-affected)))
-
-
-(defmethod release-resources ((query <dbd-oracle-query>))
-  (release-resources (query-prepared query)))

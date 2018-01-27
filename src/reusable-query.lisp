@@ -6,4 +6,4 @@
        (setf (slot-value (query-prepared ,var) 'reusablep) t)
        (unwind-protect
             (progn ,@body)
-         (dbd.oracle::release-resources ,var)))))
+         (dbd.oracle::release-resources (query-prepared ,var))))))

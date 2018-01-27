@@ -714,11 +714,13 @@ the length of that format.")
                                :database database)
                  (setf (slot-value stmt 'rows-affected)
                        (uffi:deref-pointer rows-affected 'ub4)))))
-        ;; free resources unless a query, or a reusable statement
-        (unless (or selectp reusablep)
-          (release-resources stmt)
-          #+nil(oci-handle-free (deref-vp oci-stmthp) +oci-htype-stmt+)
-          #+nil(uffi:free-foreign-object oci-stmthp)))
+        ;; Free resources unless a reusable statement.
+        (unless reusablep
+          ;; For a non-reusable SELECT statements we can release memory
+          ;; allocated for parameters bindings, and should keep stmthp
+          ;; handle for future fetches. This handle well be released
+          ;; after the last fetch.
+          (release-resources stmt :keep-stmthp-p selectp)))
       (cond
         (selectp
          (make-query-cursor database oci-stmthp result-types field-names))
@@ -1026,11 +1028,11 @@ statement or NIL, if the statement execuded something else."
 (defun variable-length-type (type)
   (member type '(:string :clob :blob)))
 
-(defgeneric release-resources (stmt)
+(defgeneric release-resources (stmt &key keep-stmthp-p)
   (:documentation "Release all uffi-allocated resources associated to the statement.")
-  (:method ((stmt <oracle-stmt>))
+  (:method ((stmt <oracle-stmt>) &key keep-stmthp-p)
     (with-slots (oci-stmthp selectp bindings database) stmt
-      (with-slots (envhp svchp errhp) database
+      (unless keep-stmthp-p
         (oci-handle-free (deref-vp oci-stmthp) +oci-htype-stmt+)
         (uffi:free-foreign-object oci-stmthp))
       ;; Deallocate memory used for passing bound parameters values
