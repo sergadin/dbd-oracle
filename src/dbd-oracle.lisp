@@ -260,12 +260,12 @@ the length of that format.")
     (setf (deref-vp envhp) +null-void-pointer+)
 
     (progn
-      (oci-initialize +oci-object+ +null-void-pointer+ +null-void-pointer+
+      (oci-initialize +oci-threaded+ +null-void-pointer+ +null-void-pointer+
                       +null-void-pointer+ +null-void-pointer-pointer+)
       (ignore-errors (oci-handle-alloc +null-void-pointer+ envhp
                                        +oci-htype-env+ 0
                                        +null-void-pointer-pointer+)) ;no testing return
-      (oci-env-init envhp +oci-default+ 0 +null-void-pointer-pointer+))
+      (oci-env-init envhp +oci-threaded+ 0 +null-void-pointer-pointer+))
 
     (oci-handle-alloc (deref-vp envhp) errhp
                       +oci-htype-error+ 0 +null-void-pointer-pointer+)

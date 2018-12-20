@@ -11,7 +11,8 @@
 
 (in-package #:dbd.oracle)
 
-(defparameter *foreign-resource-hash* (make-hash-table :test #'equal))
+(defparameter *foreign-resource-hash*
+  (make-hash-table :test #'equal :synchronized t))
 
 (defstruct (foreign-resource)
   (type (error "Missing TYPE.")
