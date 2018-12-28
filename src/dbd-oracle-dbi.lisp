@@ -6,6 +6,9 @@
 
 (cl-syntax:use-syntax :annot)
 
+(unless *oracle-library-loaded*
+  (oracle-load-foreign))
+
 @export
 (defclass <dbd-oracle> (<dbi-driver>) ())
 
@@ -85,8 +88,6 @@ string conversion functions.
 Example of DATABASE-NAME:
   127.0.0.1:1521/orcl
 "
-  (unless *oracle-library-loaded*
-    (oracle-load-foreign))
   (make-instance '<dbd-oracle-connection>
      :database-name database-name
      :auto-commit nil
