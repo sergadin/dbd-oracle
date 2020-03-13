@@ -15,7 +15,7 @@
     (let ((precise-answer (/ (* pi pi) 6d0))
           (limit 20000))
       (loop for k from 1 to limit
-         do (dbi:execute query k (/ 1.0d0 (* k k))))
+         do (dbi:execute query (list k (/ 1.0d0 (* k k)))))
       (ensure-same
        (get-first (run connection "SELECT SUM(r) AS approx FROM x") :approx)
        precise-answer
