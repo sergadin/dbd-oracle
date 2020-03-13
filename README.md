@@ -78,7 +78,7 @@ expression.
 
 (let* ((query (dbi:prepare *connection*
                            "SELECT * FROM somewhere WHERE flag = ? OR updated_at > ?"))
-       (result (dbi:execute query 0 "2011-11-01")))
+       (result (dbi:execute query (list 0 "2011-11-01"))))
   (loop for row = (dbi:fetch result)
      while row
      ;; process "row".
@@ -102,7 +102,7 @@ CLOB fields may be used in INSERT operations.
 ```lisp
 (let ((long-string (make-string 22000 :initial-element #\a))
       (query (dbi:prepare "INSERT INTO tbl (clob_field) VALUES ( ?)")))
-  (dbi:execute query long-string))
+  (dbi:execute query (list long-string)))
 ```
 
 You can not SELECT the value back, as ORACLE strips CLOB values to a
@@ -115,7 +115,7 @@ The library supports single parse, multiple bind/executes loop for a statement.
 ```lisp
 (with-reusable-query (query connection "INSERT INTO tbl (k) VALUES ( ?)")
   (loop for k from 1 to 100
-    do (dbi:execute query k)))
+    do (dbi:execute query (list k))))
 ```
 
 This scheme may be more efficient when evaluating large number of
