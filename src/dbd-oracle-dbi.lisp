@@ -4,7 +4,7 @@
 
 (in-package :dbd.oracle)
 
-(cl-syntax:use-syntax :annot)
+(cl-annot:enable-annot-syntax)
 
 @export
 (defclass <dbd-oracle> (<dbi-driver>) ())

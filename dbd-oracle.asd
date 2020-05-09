@@ -12,7 +12,7 @@
   :long-description "A CL-DBI interface for ORACLE database based on
   OCI bindings provided by CLSQL library."
   :version (:read-file-form "VERSION")
-  :depends-on (:dbi :cffi-uffi-compat :cffi :cl-syntax)
+  :depends-on (:dbi :cffi-uffi-compat :cffi :cl-syntax :cl-annot)
   :pathname "src"
   :components ((:file "package")
                (:file "oracle-constants")
